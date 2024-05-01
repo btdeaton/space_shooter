@@ -1,6 +1,8 @@
 import sys
+from time import sleep
 import pygame
 from settings import Settings
+from game_stats import GameStats
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
@@ -20,6 +22,9 @@ class SpaceShooter:
         self.screen = pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
         pygame.display.set_caption("Space Shooter")
 
+        #Create instance to store game statistics
+        self.stats = GameStats(self)
+
         self.ship = Ship(self)
         self.bullets = pygame.sprite.Group()
         self.aliens = pygame.sprite.Group()
@@ -33,6 +38,7 @@ class SpaceShooter:
             self._check_events()
             self.ship.update()
             self._update_bullets()
+            self._update_aliens()
             self._update_screen()
             self.clock.tick(60)
     
@@ -85,7 +91,19 @@ class SpaceShooter:
         for bullet in self.bullets.copy():
             if bullet.rect.bottom < 0:
                 self.bullets.remove(bullet)
-                
+            
+        self._check_bullet_alien_collision()
+
+    def _check_bullet_alien_collision(self):
+        """Respond to alien/bullet collisions"""
+        #Check if any bullets have hit aliens, if so get rid of both
+        collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+
+        #If fleet is destroyed, destroy all bullets and create new fleet
+        if not self.aliens:
+            self.bullets.empty()
+            self._create_fleet()
+
     def _create_fleet(self):
         """Create the fleet of aliens"""
         #Create an alien and keep adding aliens until there is no room left
@@ -102,6 +120,19 @@ class SpaceShooter:
             #Finish row, reset x value, increment y value
             current_x = alien_height
             current_y += 2 * alien_height
+
+    def _check_fleet_edges(self):
+        """If the fleet hits an edge, respond"""
+        for alien in self.aliens.sprites():
+            if alien.check_edges():
+                self._change_fleet_direction()
+                break
+
+    def _change_fleet_direction(self):
+        """Drop the entire fleet and change its direction"""
+        for alien in self.aliens.sprites():
+            alien.rect.y += self.settings.fleet_drop_speed
+        self.settings.fleet_direction *= -1
     
     def _create_alien(self, x_position, y_position):
         """Create an alien and place it in the fleet"""
@@ -110,6 +141,15 @@ class SpaceShooter:
         new_alien.rect.x = x_position
         new_alien.rect.y = y_position
         self.aliens.add(new_alien)
+
+    def _update_aliens(self):
+        """Check if fleet is at the edge, then update the postion of all aliens in the fleet"""
+        self._check_fleet_edges()
+        self.aliens.update()
+
+        #Look for alien-ship collisions
+        if pygame.sprite.spritecollideany(self.ship, self.aliens):
+            print('Ship Hit!!!')
 
     def _update_screen(self):
         """Update image on the screen, flip to new screen"""
