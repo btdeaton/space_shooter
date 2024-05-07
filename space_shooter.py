@@ -31,14 +31,20 @@ class SpaceShooter:
 
         self._create_fleet()
 
+        #Start Space Shooter in an active state
+        self.game_active = True
+
     def run_game(self):
         """Create the main loop to run the game"""
         #Watch for keyboard and mouse events
         while True:
             self._check_events()
-            self.ship.update()
-            self._update_bullets()
-            self._update_aliens()
+
+            if self.game_active:
+                self.ship.update()
+                self._update_bullets()
+                self._update_aliens()
+                
             self._update_screen()
             self.clock.tick(60)
     
@@ -104,6 +110,25 @@ class SpaceShooter:
             self.bullets.empty()
             self._create_fleet()
 
+    def _ship_hit(self):
+        """Respond to ship being hit by alien"""
+        #Reduce one ship life
+        if self.stats.ships_left > 0:
+            self.stats.ships_left -= 1
+
+            #Get rid of remaining bullets and aliens
+            self.bullets.empty()
+            self.aliens.empty()
+
+            #Create a new fleet and center ship
+            self._create_fleet()
+            self.ship.center_ship()
+
+            #Pause
+            sleep(0.5)
+        else:
+            self.game_active = False
+
     def _create_fleet(self):
         """Create the fleet of aliens"""
         #Create an alien and keep adding aliens until there is no room left
@@ -128,6 +153,13 @@ class SpaceShooter:
                 self._change_fleet_direction()
                 break
 
+    def _check_aliens_bottom(self):
+        """Check if aliens hit bottom of screen"""
+        for alien in self.aliens.sprites():
+            if alien.rect.bottom >= self.settings.screen_height:
+                self._ship_hit()
+                break
+
     def _change_fleet_direction(self):
         """Drop the entire fleet and change its direction"""
         for alien in self.aliens.sprites():
@@ -149,7 +181,10 @@ class SpaceShooter:
 
         #Look for alien-ship collisions
         if pygame.sprite.spritecollideany(self.ship, self.aliens):
-            print('Ship Hit!!!')
+            self._ship_hit()
+
+        #Look for aliens hitting the bottom of the screen
+        self._check_aliens_bottom()
 
     def _update_screen(self):
         """Update image on the screen, flip to new screen"""
