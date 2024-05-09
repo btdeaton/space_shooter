@@ -32,7 +32,7 @@ Score Tracking: Your highest score is recorded and displayed each time you play.
 Contributions to Space Shooter are welcome! If you have suggestions or improvements, please follow these steps:
 
 1. Fork the repository.
-2. Create a new branch: git checkout -b new-feature.
+2. Create a new branch: 'git checkout -b new-feature'.
 3. Make your changes and test them.
 4. Submit a pull request with a comprehensive description of changes.
 
