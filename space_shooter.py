@@ -1,5 +1,7 @@
 import sys
 from time import sleep
+from pathlib import Path
+import json
 import pygame
 from settings import Settings
 from game_stats import GameStats
@@ -79,6 +81,8 @@ class SpaceShooter:
             #Reset the game stats
             self.stats.reset_stats()
             self.sb.prep_score()
+            self.sb.prep_level()
+            self.sb.prep_ships()
             self.game_active = True
 
             #Get rid of any remaining bullets and aliens
@@ -99,6 +103,9 @@ class SpaceShooter:
             self.ship.moving_left = True
         #If Q is pressed quit the game
         elif event.key == pygame.K_q:
+            path = Path('high_score.json')
+            high_score = json.dumps(self.stats.high_score)
+            path.write_text(high_score)
             sys.exit()
         #If P is pressed start the game
         elif event.key == pygame.K_p:
@@ -145,7 +152,14 @@ class SpaceShooter:
             self.sb.prep_score()
             self.sb.check_high_score()
 
-        #If fleet is destroyed, destroy all bullets and create new fleet
+            self._start_new_level()
+            
+            #Increase level
+            self.stats.level += 1
+            self.sb.prep_level()
+
+    def _start_new_level(self):
+        """If fleet is destroyed, destroy all bullets and create new fleet"""
         if not self.aliens:
             self.bullets.empty()
             self._create_fleet()
@@ -156,6 +170,7 @@ class SpaceShooter:
         #Reduce one ship life
         if self.stats.ships_left > 0:
             self.stats.ships_left -= 1
+            self.sb.prep_ships()
 
             #Get rid of remaining bullets and aliens
             self.bullets.empty()
